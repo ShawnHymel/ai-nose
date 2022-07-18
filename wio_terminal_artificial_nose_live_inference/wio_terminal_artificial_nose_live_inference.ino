@@ -38,7 +38,7 @@
 #include "sgp30.h"
 #include "TFT_eSPI.h"                                 // Comes with Wio Terminal package
 
-#include "artificial-nose_inferencing.h"              // Name of Edge Impulse library
+#include "ai-nose_inferencing.h"                      // Name of Edge Impulse library
 
 // Settings
 #define DEBUG               1                         // 1 to print out debugging info
@@ -58,7 +58,7 @@ float mins[] = {
   27.93, 36.17, 400.0, 0.0, 1.56, 0.81, 1.51, 0.61
 };
 float ranges[] = {
-  12.54, 19.08, 56930.0, 60000.0, 1.48, 2.05, 1.6, 2.68
+  12.54, 18.74, 56930.0, 60000.0, 1.48, 2.05, 1.6, 2.68
 };
 
 // Global objects
@@ -121,7 +121,7 @@ void loop() {
   float max_val = 0.0;
   char str_buf[40];
   
-  // Transmit samples over serial port
+  // Collect samples and perform inference
   for (int i = 0; i < NUM_SAMPLES; i++) {
 
     // Take timestamp so we can hit our target frequency
