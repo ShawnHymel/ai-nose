@@ -37,11 +37,15 @@
  */
 
 #include <Wire.h>
+//aditi
+#include <TFT_eSPI.h>
 
 #include "Multichannel_Gas_GMXXX.h"
 #include "seeed_bme680.h"
 #include "sensirion_common.h"
 #include "sgp30.h"
+//aditi
+TFT_eSPI tft;
 
 // Settings
 #define BTN_START           0                         // 1: press button to start, 0: loop
@@ -70,27 +74,65 @@ void setup() {
   // Start serial
   Serial.begin(115200);
 
+  // Initialize display
+  tft.begin();
+  tft.setRotation(3);  // Adjust rotation if needed
+
   // Initialize gas sensors
   gas.begin(Wire, 0x08);
 
   // Initialize environmental sensor
   while (!bme680.init()) {
+    //aditi
+        tft.fillScreen(TFT_RED);
+    tft.setTextSize(2);
+    tft.setTextColor(TFT_WHITE);
+    tft.setCursor(10, 50);
+    tft.println("Error: Could not initialize BME680");
     Serial.println("Trying to initialize BME680...");
     delay(1000);
+    tft.fillScreen(TFT_BLACK);
   }
 
   // Initialize VOC and eCO2 sensor
   while (sgp_probe() != STATUS_OK) {
+    //aditi
+    tft.fillScreen(TFT_RED);
+    tft.setTextSize(2);
+    tft.setTextColor(TFT_WHITE);
+    tft.setCursor(10, 50);
+    tft.println("Error: Could not initialize SGP30");
+
     Serial.println("Trying to initialize SGP30...");
     delay(1000);
+    //aditi
+    tft.fillScreen(TFT_BLACK);
   }
 
   // Perform initial read
   sgp_err = sgp_measure_signals_blocking_read(&sgp_eth, &sgp_h2);
   if (sgp_err != STATUS_OK) {
+    //aditi
+    tft.fillScreen(TFT_RED);
+    tft.setTextSize(2);
+    tft.setTextColor(TFT_WHITE);
+    tft.setCursor(10, 50);
+    tft.println("Error: Could not read signal from SGP30");
+
     Serial.println("Error: Could not read signal from SGP30");
     while (1);
   }
+}
+
+//aditi
+void displayMessage(const char *message, uint16_t color) {
+  tft.fillScreen(color);
+  tft.setTextSize(2);
+  tft.setTextColor(TFT_WHITE);
+  tft.setCursor(10, 50);
+  tft.println(message);
+  delay(1000);
+  tft.fillScreen(TFT_BLACK);
 }
 
 void loop() {
@@ -109,6 +151,10 @@ void loop() {
   while (digitalRead(BTN_PIN) == 1);
 #endif
 
+  // Display status message on the Wio Terminal display
+  displayMessage("Data collection in progress...", TFT_BLUE);
+
+  // Continue with the existing serial print statements
   // Print header
   Serial.println("timestamp,temp,humd,pres,co2,voc1,voc2,no2,eth,co");
 
@@ -126,6 +172,7 @@ void loop() {
   
     // Read BME680 environmental sensor
     if (bme680.read_sensor_data()) {
+      displayMessage("Error: Could not read from BME680", TFT_RED);
       Serial.println("Error: Could not read from BME680");
       return;
     }
@@ -133,6 +180,7 @@ void loop() {
     // Read SGP30 sensor
     sgp_err = sgp_measure_iaq_blocking_read(&sgp_tvoc, &sgp_co2);
     if (sgp_err != STATUS_OK) {
+      displayMessage("Error: Could not read from SGP30", TFT_RED);
       Serial.println("Error: Could not read from SGP30");
       return;
     }
@@ -165,7 +213,7 @@ void loop() {
 
   // Print empty line to transmit termination of recording
   Serial.println();
-
+displayMessage("Data collection complete", TFT_GREEN);
   // Make sure the button has been released for a few milliseconds
 #if BTN_START
   while (digitalRead(BTN_PIN) == 0);
